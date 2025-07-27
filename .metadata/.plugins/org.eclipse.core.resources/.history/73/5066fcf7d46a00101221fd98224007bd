@@ -1,0 +1,9 @@
+package com.bank.proxy;
+
+import org.springframework.cloud.openfeign.FeignClient;
+
+@FeignClient(name = "CUSTOMER-SERVICE", url = "http://localhost:8081/customer-api")
+public interface CustomerProxy {
+
+	
+}

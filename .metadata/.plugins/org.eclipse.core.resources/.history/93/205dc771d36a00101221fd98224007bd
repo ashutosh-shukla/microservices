@@ -1,0 +1,5 @@
+package com.bank.proxy;
+
+public class KYCProxy {
+
+}
