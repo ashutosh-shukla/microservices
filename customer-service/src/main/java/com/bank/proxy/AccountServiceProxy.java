@@ -14,7 +14,7 @@ import com.bank.model.Account;
 import com.bank.model.Transaction;
 
 
-@FeignClient(name = "ACCOUNT-SERVICE", path = "/account-api")
+@FeignClient(name = "account-service", path = "/account-api")
 public interface AccountServiceProxy {
 	
 	 @GetMapping("/health")

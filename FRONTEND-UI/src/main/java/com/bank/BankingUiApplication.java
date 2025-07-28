@@ -7,4 +7,4 @@ public class BankingUiApplication {
     public static void main(String[] args) {
         SpringApplication.run(BankingUiApplication.class, args);
     }
-}
+}	

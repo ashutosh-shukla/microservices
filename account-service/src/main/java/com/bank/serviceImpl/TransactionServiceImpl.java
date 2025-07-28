@@ -39,8 +39,8 @@ public class TransactionServiceImpl implements TransactionService {
         
         accountDao.update(account);
 
-        Transaction txn = new Transaction(customerId, "DEPOSIT", amount, LocalDateTime.now());
-        txn.setToAccount("Self DEPOSIT");
+        Transaction txn = new Transaction(customerId, "DEPOSIT", amount, LocalDateTime.now(),"Self DEPOSIT");
+       
         transactionDao.save(txn);
     }
 
@@ -59,8 +59,8 @@ public class TransactionServiceImpl implements TransactionService {
         account.setBalance(account.getBalance().subtract(amount));
         accountDao.update(account);
 
-        Transaction txn = new Transaction(customerId, "WITHDRAW", amount, LocalDateTime.now());
-         txn.setToAccount("Self Withdraw");
+        Transaction txn = new Transaction(customerId, "WITHDRAW", amount, LocalDateTime.now(),"Self Withdrawl");
+         
         transactionDao.save(txn);
     }
 
@@ -88,7 +88,7 @@ public class TransactionServiceImpl implements TransactionService {
         accountDao.update(toAccount);
 
         Transaction txn = new Transaction(fromCustomerId, "TRANSFER", amount, LocalDateTime.now(), toAccountNumber);
-        txn.setToAccount(toAccountNumber);
+        
         transactionDao.save(txn);
     }
      @Override

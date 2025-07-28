@@ -37,7 +37,8 @@ public class AccountServiceImpl implements AccountService {
         
         accountDao.update(account);
 
-        Transaction txn = new Transaction(customerId, "DEPOSIT", amount, LocalDateTime.now());
+        Transaction txn = new Transaction(customerId, "DEPOSIT", amount, LocalDateTime.now(),"SELF DEPOSIT");
+		 // Generate a random transaction ID
         transactionDao.save(txn);
     }
 
@@ -50,7 +51,7 @@ public class AccountServiceImpl implements AccountService {
         account.setBalance(account.getBalance().subtract(amount));
         accountDao.update(account);
 
-        Transaction txn = new Transaction(customerId, "WITHDRAW", amount, LocalDateTime.now());
+        Transaction txn = new Transaction(customerId, "WITHDRAW", amount, LocalDateTime.now(),"SELF WITHDRAW");
         transactionDao.save(txn);
     }
 
@@ -69,7 +70,7 @@ public class AccountServiceImpl implements AccountService {
         accountDao.update(fromAccount);
         accountDao.update(toAccount);
 
-        Transaction txn = new Transaction(customerId, "TRANSFER", amount, LocalDateTime.now());
+        Transaction txn = new Transaction(customerId, "TRANSFER", amount, LocalDateTime.now(),toAccountNumber);
         transactionDao.save(txn);
     }
 

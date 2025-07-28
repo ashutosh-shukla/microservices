@@ -19,6 +19,8 @@ import com.bank.utils.PasswordUtil;
 public class CustomerServiceImpl implements CustomerService{
     @Autowired
 	private CustomerDao customerDao;
+    
+    
     @Override
     public Customer createCustomer(Customer customer) {
         if (customer.getPassword() == null || customer.getPassword().isEmpty()) {
@@ -27,8 +29,13 @@ public class CustomerServiceImpl implements CustomerService{
         String encryptedPassword = PasswordUtil.encodePassword(customer.getPassword());
         customer.setPassword(encryptedPassword);
         customer.setStatus("PENDING");
+      
+        
+        
         return customerDao.save(customer);
     }
+    
+    
   @Override
 public Customer updateDetails(String customerId, Customer updatedData) {
     Customer existingCustomer = customerDao.findById(customerId);

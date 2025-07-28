@@ -28,6 +28,7 @@ public class CustomerDaoImpl implements CustomerDao {
         customer.setCreatedAt(LocalDateTime.now());
         customer.setUpdatedAt(LocalDateTime.now());
         entityManager.persist(customer);
+        entityManager.flush();
         return customer;
     }
     @Override

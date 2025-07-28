@@ -13,7 +13,7 @@ import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfigurat
         HibernateJpaAutoConfiguration.class
     }
 )
-@EnableFeignClients(basePackages = "com.bank.proxy")
+@EnableFeignClients
 public class AdminServiceApplication {
     public static void main(String[] args) {
         SpringApplication.run(AdminServiceApplication.class, args);

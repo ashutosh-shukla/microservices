@@ -8,139 +8,333 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.bank.model.Transaction;
+
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Controller
-@RequestMapping("/account")
+@RequestMapping("/customers")
 public class AccountUIController {
-    
-    private final String API_GATEWAY_URL = "http://localhost:8080";
-    
+
     @Autowired
     private RestTemplate restTemplate;
-    
-    // Show account details by customer ID
-    @GetMapping("/customer/{customerId}")
-    public String showAccountByCustomer(@PathVariable String customerId, Model model) {
+
+    @Autowired
+    private CustomerUIController customerUIController;
+
+    private static final String API_GATEWAY_URL = "http://localhost:8080";
+
+    // Deposit Page
+    @GetMapping("/depositPage/{customerId}")
+    public String showDepositPage(@PathVariable String customerId, Model model, RedirectAttributes redirectAttributes) {
+        if (!customerUIController.isCustomerApproved(customerId)) {
+            redirectAttributes.addFlashAttribute("error", "Access denied. Account not approved or active.");
+            return "redirect:/customer/dashboard/" + customerId;
+        }
+        
+        // Get account details for balance display
         try {
             ResponseEntity<Map> response = restTemplate.getForEntity(
                 API_GATEWAY_URL + "/account-api/accounts/by-customer/" + customerId, Map.class);
-            model.addAttribute("account", response.getBody());
-            model.addAttribute("customerId", customerId);
+            if (response.getStatusCode() == HttpStatus.OK) {
+                model.addAttribute("account", response.getBody());
+            }
         } catch (Exception e) {
-            model.addAttribute("error", "Unable to fetch account details: " + e.getMessage());
+            model.addAttribute("error", "Unable to load account details");
         }
-        return "account-details";
+        
+        model.addAttribute("customerId", customerId);
+        return "deposit";
     }
-    
-    // Show account details by account number
-    @GetMapping("/number/{accountNumber}")
-    public String showAccountByNumber(@PathVariable String accountNumber, Model model) {
+
+    @PostMapping("/deposit/{customerId}")
+    public String processDeposit(@PathVariable String customerId,
+                                @RequestParam BigDecimal amount,
+                                Model model,
+                                RedirectAttributes redirectAttributes) {
+        try {
+            if (!customerUIController.isCustomerApproved(customerId)) {
+                model.addAttribute("error", "Unauthorized access");
+                model.addAttribute("customerId", customerId);
+                return "deposit";
+            }
+
+            if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+                model.addAttribute("error", "Amount must be greater than zero");
+                model.addAttribute("customerId", customerId);
+                loadAccountDetails(customerId, model);
+                return "deposit";
+            }
+
+            if (amount.compareTo(new BigDecimal("100000")) > 0) {
+                model.addAttribute("error", "Maximum deposit limit is ₹1,00,000");
+                model.addAttribute("customerId", customerId);
+                loadAccountDetails(customerId, model);
+                return "deposit";
+            }
+
+            String url = API_GATEWAY_URL + "/account-api/accounts/deposit?customerId=" + customerId + "&amount=" + amount;
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.PUT, null, String.class);
+
+            if (response.getStatusCode() == HttpStatus.OK) {
+                model.addAttribute("success", "₹" + amount + " deposited successfully!");
+            } else {
+                model.addAttribute("error", "Deposit failed. Please try again.");
+            }
+
+        } catch (Exception e) {
+            model.addAttribute("error", "Deposit failed: " + e.getMessage());
+        }
+
+        model.addAttribute("customerId", customerId);
+        loadAccountDetails(customerId, model);
+        return "deposit";
+    }
+
+    // Withdrawal Page
+    @GetMapping("/withdrawlPage/{customerId}")
+    public String showWithdrawalPage(@PathVariable String customerId, Model model, RedirectAttributes redirectAttributes) {
+        if (!customerUIController.isCustomerApproved(customerId)) {
+            redirectAttributes.addFlashAttribute("error", "Access denied. Account not approved or active.");
+            return "redirect:/customer/dashboard/" + customerId;
+        }
+        
+        // Get account details for balance display
+        loadAccountDetails(customerId, model);
+        model.addAttribute("customerId", customerId);
+        return "withdrawl";
+    }
+
+    @PostMapping("/withdraw/{customerId}")
+    public String processWithdrawal(@PathVariable String customerId,
+                                   @RequestParam BigDecimal amount,
+                                   Model model,
+                                   RedirectAttributes redirectAttributes) {
+        try {
+            if (!customerUIController.isCustomerApproved(customerId)) {
+                model.addAttribute("error", "Unauthorized access");
+                model.addAttribute("customerId", customerId);
+                loadAccountDetails(customerId, model);
+                return "withdrawl";
+            }
+
+            if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+                model.addAttribute("error", "Amount must be greater than zero");
+                model.addAttribute("customerId", customerId);
+                loadAccountDetails(customerId, model);
+                return "withdrawl";
+            }
+
+            if (amount.compareTo(new BigDecimal("50000")) > 0) {
+                model.addAttribute("error", "Maximum withdrawal limit is ₹50,000 per transaction");
+                model.addAttribute("customerId", customerId);
+                loadAccountDetails(customerId, model);
+                return "withdrawl";
+            }
+
+            String url = API_GATEWAY_URL + "/account-api/accounts/withdraw?customerId=" + customerId + "&amount=" + amount;
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.PUT, null, String.class);
+
+            if (response.getStatusCode() == HttpStatus.OK) {
+                model.addAttribute("success", "₹" + amount + " withdrawn successfully!");
+            } else {
+                model.addAttribute("error", "Withdrawal failed. Insufficient balance or other error.");
+            }
+
+        } catch (Exception e) {
+            String errorMessage = e.getMessage();
+            if (errorMessage.contains("Insufficient")) {
+                model.addAttribute("error", "Insufficient balance for withdrawal");
+            } else {
+                model.addAttribute("error", "Withdrawal failed: " + errorMessage);
+            }
+        }
+
+        model.addAttribute("customerId", customerId);
+        loadAccountDetails(customerId, model);
+        return "withdrawl";
+    }
+
+    // Transfer Page
+    @GetMapping("/transferPage/{customerId}")
+    public String showTransferPage(@PathVariable String customerId, Model model, RedirectAttributes redirectAttributes) {
+        if (!customerUIController.isCustomerApproved(customerId)) {
+            redirectAttributes.addFlashAttribute("error", "Access denied. Account not approved or active.");
+            return "redirect:/customer/dashboard/" + customerId;
+        }
+        
+        // Get account details for balance display
+        loadAccountDetails(customerId, model);
+        model.addAttribute("customerId", customerId);
+        return "transfer";
+    }
+
+    @PostMapping("/transfer/{customerId}")
+    public String processTransfer(@PathVariable String customerId,
+                                 @RequestParam String toAccountNumber,
+                                 @RequestParam BigDecimal amount,
+                                 Model model,
+                                 RedirectAttributes redirectAttributes) {
+        try {
+            if (!customerUIController.isCustomerApproved(customerId)) {
+                model.addAttribute("error", "Unauthorized access");
+                model.addAttribute("customerId", customerId);
+                loadAccountDetails(customerId, model);
+                return "transfer";
+            }
+
+            if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+                model.addAttribute("error", "Amount must be greater than zero");
+                model.addAttribute("customerId", customerId);
+                loadAccountDetails(customerId, model);
+                return "transfer";
+            }
+
+            if (amount.compareTo(new BigDecimal("100000")) > 0) {
+                model.addAttribute("error", "Maximum transfer limit is ₹1,00,000");
+                model.addAttribute("customerId", customerId);
+                loadAccountDetails(customerId, model);
+                return "transfer";
+            }
+
+            if (toAccountNumber == null || toAccountNumber.trim().isEmpty()) {
+                model.addAttribute("error", "Please enter a valid account number");
+                model.addAttribute("customerId", customerId);
+                loadAccountDetails(customerId, model);
+                return "transfer";
+            }
+
+            // Check if target account exists
+            try {
+                ResponseEntity<Map> targetAccountResponse = restTemplate.getForEntity(
+                    API_GATEWAY_URL + "/account-api/accounts/by-account/" + toAccountNumber, Map.class);
+                if (targetAccountResponse.getStatusCode() != HttpStatus.OK) {
+                    model.addAttribute("error", "Target account not found");
+                    model.addAttribute("customerId", customerId);
+                    loadAccountDetails(customerId, model);
+                    return "transfer";
+                }
+            } catch (Exception e) {
+                model.addAttribute("error", "Target account not found or invalid");
+                model.addAttribute("customerId", customerId);
+                loadAccountDetails(customerId, model);
+                return "transfer";
+            }
+
+            String url = API_GATEWAY_URL + "/account-api/accounts/transfer?fromCustomerId=" + customerId +
+                        "&toAccountNumber=" + toAccountNumber + "&amount=" + amount;
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.PUT, null, String.class);
+
+            if (response.getStatusCode() == HttpStatus.OK) {
+                model.addAttribute("success", "₹" + amount + " transferred successfully to account " + toAccountNumber);
+            } else {
+                model.addAttribute("error", "Transfer failed. Please check account details and balance.");
+            }
+
+        } catch (Exception e) {
+            String errorMessage = e.getMessage();
+            if (errorMessage.contains("Insufficient")) {
+                model.addAttribute("error", "Insufficient balance for transfer");
+            } else if (errorMessage.contains("not found")) {
+                model.addAttribute("error", "Target account not found");
+            } else {
+                model.addAttribute("error", "Transfer failed: " + errorMessage);
+            }
+        }
+
+        model.addAttribute("customerId", customerId);
+        loadAccountDetails(customerId, model);
+        return "transfer";
+    }
+
+    // Transaction History
+    @GetMapping("/transactionHistory/{customerId}")
+    public String showTransactionHistory(@PathVariable String customerId,
+                                         Model model,
+                                         RedirectAttributes redirectAttributes) {
+
+        if (!customerUIController.isCustomerApproved(customerId)) {
+            redirectAttributes.addFlashAttribute("error", "Access denied. Account not approved or active.");
+            return "redirect:/customer/dashboard/" + customerId;
+        }
+
+        try {
+            ResponseEntity<Transaction[]> response = restTemplate.getForEntity(
+                    API_GATEWAY_URL + "/account-api/transactions/" + customerId, Transaction[].class);
+
+            if (response.getStatusCode() == HttpStatus.OK) {
+                Transaction[] transactions = response.getBody();
+
+                model.addAttribute("transactions", transactions);
+
+                if (transactions == null || transactions.length == 0) {
+                    model.addAttribute("noTransactions", true);
+                    model.addAttribute("message", "No transactions found for your account");
+                }
+            } else {
+                model.addAttribute("error", "Unable to fetch transaction history");
+            }
+        } catch (Exception e) {
+            model.addAttribute("error", "Error fetching transaction history: " + e.getMessage());
+        }
+
+        model.addAttribute("customerId", customerId);
+        return "transactionHistory";  // JSP name
+    }
+
+
+    // Helper method to load account details
+    private void loadAccountDetails(String customerId, Model model) {
         try {
             ResponseEntity<Map> response = restTemplate.getForEntity(
-                API_GATEWAY_URL + "/account-api/accounts/by-account/" + accountNumber, Map.class);
-            model.addAttribute("account", response.getBody());
-        } catch (Exception e) {
-            model.addAttribute("error", "Unable to fetch account details: " + e.getMessage());
-        }
-        return "account-details";
-    }
-    
-    // Show transaction form
-    @GetMapping("/transactions/{customerId}")
-    public String showTransactionForm(@PathVariable String customerId, Model model) {
-        try {
-            // Get account details for the form
-            ResponseEntity<Map> accountResponse = restTemplate.getForEntity(
                 API_GATEWAY_URL + "/account-api/accounts/by-customer/" + customerId, Map.class);
-            model.addAttribute("account", accountResponse.getBody());
-            
-            // Get transaction history
-            ResponseEntity<List> transactionResponse = restTemplate.getForEntity(
-                API_GATEWAY_URL + "/account-api/transactions/" + customerId, List.class);
-            model.addAttribute("transactions", transactionResponse.getBody());
-            
-            model.addAttribute("customerId", customerId);
+            if (response.getStatusCode() == HttpStatus.OK) {
+                model.addAttribute("account", response.getBody());
+            }
         } catch (Exception e) {
-            model.addAttribute("error", "Unable to fetch transaction details: " + e.getMessage());
+            // Silently handle - account details not critical for error display
         }
-        return "account-transactions";
     }
-    
-    // Handle deposit through account service
-    @PostMapping("/deposit")
-    public String deposit(@RequestParam("customerId") String customerId,
-                         @RequestParam("amount") BigDecimal amount,
-                         RedirectAttributes redirectAttributes) {
-        try {
-            ResponseEntity<String> response = restTemplate.exchange(
-                API_GATEWAY_URL + "/account-api/accounts/deposit?customerId=" + customerId + "&amount=" + amount,
-                HttpMethod.PUT, null, String.class);
-            redirectAttributes.addFlashAttribute("success", response.getBody());
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "Deposit failed: " + e.getMessage());
-        }
-        return "redirect:/account/transactions/" + customerId;
-    }
-    
-    // Handle withdrawal through account service
-    @PostMapping("/withdraw")
-    public String withdraw(@RequestParam("customerId") String customerId,
-                          @RequestParam("amount") BigDecimal amount,
-                          RedirectAttributes redirectAttributes) {
-        try {
-            ResponseEntity<String> response = restTemplate.exchange(
-                API_GATEWAY_URL + "/account-api/accounts/withdraw?customerId=" + customerId + "&amount=" + amount,
-                HttpMethod.PUT, null, String.class);
-            redirectAttributes.addFlashAttribute("success", response.getBody());
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "Withdrawal failed: " + e.getMessage());
-        }
-        return "redirect:/account/transactions/" + customerId;
-    }
-    
-    // Handle transfer through account service
-    @PostMapping("/transfer")
-    public String transfer(@RequestParam("fromCustomerId") String fromCustomerId,
-                          @RequestParam("toAccountNumber") String toAccountNumber,
-                          @RequestParam("amount") BigDecimal amount,
-                          RedirectAttributes redirectAttributes) {
-        try {
-            ResponseEntity<String> response = restTemplate.exchange(
-                API_GATEWAY_URL + "/account-api/accounts/transfer?fromCustomerId=" + fromCustomerId + 
-                "&toAccountNumber=" + toAccountNumber + "&amount=" + amount,
-                HttpMethod.PUT, null, String.class);
-            redirectAttributes.addFlashAttribute("success", response.getBody());
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "Transfer failed: " + e.getMessage());
-        }
-        return "redirect:/account/transactions/" + fromCustomerId;
-    }
-    
-    // Show account management page
-    @GetMapping("/manage/{customerId}")
-    public String showAccountManagement(@PathVariable String customerId, Model model) {
-        try {
-            ResponseEntity<Map> response = restTemplate.getForEntity(
-                API_GATEWAY_URL + "/account-api/accounts/by-customer/" + customerId, Map.class);
-            model.addAttribute("account", response.getBody());
-            model.addAttribute("customerId", customerId);
-        } catch (Exception e) {
-            model.addAttribute("error", "Unable to fetch account details: " + e.getMessage());
-        }
-        return "account-management";
-    }
-    
-    // Health check
-    @GetMapping("/health")
+
+    // Get Account Details (Helper method for other controllers)
+    @GetMapping("/account/{customerId}")
     @ResponseBody
-    public String healthCheck() {
+    public ResponseEntity<Map> getAccountDetails(@PathVariable String customerId) {
         try {
-            String response = restTemplate.getForObject(API_GATEWAY_URL + "/health/account", String.class);
-            return "Frontend UP - Account Service: " + response;
+            ResponseEntity<Map> response = restTemplate.getForEntity(
+                API_GATEWAY_URL + "/account-api/accounts/by-customer/" + customerId, Map.class);
+            return response;
         } catch (Exception e) {
-            return "Frontend UP - Account Service DOWN: " + e.getMessage();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-    
-}}
+    }
+
+    // Check Account Balance (Helper method)
+    @GetMapping("/balance/{customerId}")
+    @ResponseBody
+    public ResponseEntity<Map> getAccountBalance(@PathVariable String customerId) {
+        try {
+            if (!customerUIController.isCustomerApproved(customerId)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+
+            ResponseEntity<Map> response = restTemplate.getForEntity(
+                API_GATEWAY_URL + "/account-api/accounts/by-customer/" + customerId, Map.class);
+
+            if (response.getStatusCode() == HttpStatus.OK) {
+                Map<String, Object> account = response.getBody();
+                Map<String, Object> balanceInfo = new HashMap<>();
+                balanceInfo.put("balance", account.get("balance"));
+                balanceInfo.put("accountNumber", account.get("accountNumber"));
+                return ResponseEntity.ok(balanceInfo);
+            }
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+}
