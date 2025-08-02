@@ -108,4 +108,22 @@ public class CustomerController {
     public List<Transaction> getTransactionHistory(@PathVariable String customerId) {
         return accountServiceProxy.getTransactionHistory(customerId);
     }
+
+    // --- Authentication API call ---
+
+    @PostMapping("/validate-credentials")
+    public ResponseEntity<CredentialValidationResponse> validateCredentials(@Valid @RequestBody CredentialValidationRequest request) {
+        try {
+            CredentialValidationResponse response = customerService.validateCredentials(request);
+            if (response.isValid()) {
+                return ResponseEntity.ok(response);
+            } else {
+                return ResponseEntity.badRequest().body(response);
+            }
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                CredentialValidationResponse.error("Validation failed: " + e.getMessage())
+            );
+        }
+    }
 }

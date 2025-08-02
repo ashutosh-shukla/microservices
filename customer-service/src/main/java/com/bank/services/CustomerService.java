@@ -3,6 +3,8 @@ package com.bank.services;
 import java.util.List;
 import java.util.Optional;
 
+import com.bank.dto.CredentialValidationRequest;
+import com.bank.dto.CredentialValidationResponse;
 import com.bank.model.Customer;
 
 public interface CustomerService {
@@ -18,5 +20,7 @@ public interface CustomerService {
 
     void changePassword(String customerId, String currentPassword, String newPassword);
     void changeEmail(String customerId, String newEmail);
+    
+    CredentialValidationResponse validateCredentials(CredentialValidationRequest request);
 
 }
