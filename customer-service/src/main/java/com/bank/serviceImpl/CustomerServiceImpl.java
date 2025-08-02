@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.bank.dao.CustomerDao;
+import com.bank.dto.CredentialValidationRequest;
+import com.bank.dto.CredentialValidationResponse;
 import com.bank.exception.CustomerNotFoundException;
 import com.bank.model.Customer;
 import com.bank.services.CustomerService;
@@ -107,6 +109,32 @@ public void changePassword(String customerId, String currentPassword, String new
 	@Override
 	public Optional<Customer> findByEmail(String email) {
 		return customerDao.findByEmail(email);
+	}
+
+	@Override
+	public CredentialValidationResponse validateCredentials(CredentialValidationRequest request) {
+		try {
+			Optional<Customer> customerOpt = customerDao.findByEmail(request.getEmail());
+			
+			if (customerOpt.isPresent()) {
+				Customer customer = customerOpt.get();
+				
+				// Check if password matches
+				if (PasswordUtil.matches(request.getPassword(), customer.getPassword())) {
+					return CredentialValidationResponse.success(
+						customer.getCustomerId(),
+						customer.getEmail(),
+						customer.getFirstName(),
+						customer.getLastName(),
+						customer.getRole() != null ? customer.getRole() : "CUSTOMER"
+					);
+				}
+			}
+			
+			return CredentialValidationResponse.error("Invalid email or password");
+		} catch (Exception e) {
+			return CredentialValidationResponse.error("Validation failed: " + e.getMessage());
+		}
 	}
 }  
    

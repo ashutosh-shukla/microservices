@@ -3,7 +3,7 @@ package com.bank.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
-public class CredentialValidationRequest {
+public class LoginRequest {
 
     @NotBlank(message = "Email is required")
     @Email(message = "Email should be valid")
@@ -12,9 +12,9 @@ public class CredentialValidationRequest {
     @NotBlank(message = "Password is required")
     private String password;
 
-    public CredentialValidationRequest() {}
+    public LoginRequest() {}
 
-    public CredentialValidationRequest(String email, String password) {
+    public LoginRequest(String email, String password) {
         this.email = email;
         this.password = password;
     }
