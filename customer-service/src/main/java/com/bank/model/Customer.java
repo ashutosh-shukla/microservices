@@ -16,8 +16,13 @@ private String customerId;
     @Column(nullable = false, length = 100)
     private String firstName;
     
+    
+    
     @Column(nullable = false, length = 100)
     private String lastName;
+    
+    @Column(nullable = false, length = 20)
+    private String Role;
     
     @Column(unique = true, nullable = false, length = 100)
     private String email;
@@ -93,6 +98,15 @@ private String customerId;
 public void setPassword(String password) {
     this.password = password;
 }
+
+
+	public String getRole() {
+		return Role;
+	}
+
+	public void setRole(String role) {
+		this.Role = role;
+	}
 
 }
 

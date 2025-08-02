@@ -13,6 +13,7 @@ import com.bank.model.Customer;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.TypedQuery;
 import jakarta.transaction.Transactional;
 
 @Repository
@@ -55,6 +56,22 @@ public void updatePassword(String customerId, String newPassword) {
         String query = "SELECT c FROM Customer c";
         return entityManager.createQuery(query, Customer.class).getResultList();
     }
+	@Override
+	public boolean existsByEmail(String email) {
+		 TypedQuery<Long> query = entityManager.createQuery(
+		            "SELECT COUNT(c) FROM Customer c WHERE c.email = :email", Long.class);
+		        query.setParameter("email", email);
+		        Long count = query.getSingleResult();
+		        return count > 0;
+	}
+	@Override
+	public Optional<Customer> findByEmail(String email) {
+				TypedQuery<Customer> query = entityManager.createQuery(
+				"SELECT c FROM Customer c WHERE c.email = :email", Customer.class);
+		query.setParameter("email", email);
+		List<Customer> results = query.getResultList();
+		return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
+	}
    
 
 }

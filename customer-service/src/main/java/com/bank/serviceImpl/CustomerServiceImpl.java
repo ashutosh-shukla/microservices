@@ -4,6 +4,7 @@ package com.bank.serviceImpl;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -13,7 +14,7 @@ import com.bank.exception.CustomerNotFoundException;
 import com.bank.model.Customer;
 import com.bank.services.CustomerService;
 import com.bank.utils.PasswordUtil;
-
+import com.bank.exception.CustomerAlreadyExistsException;
 
 @Service
 public class CustomerServiceImpl implements CustomerService{
@@ -25,6 +26,9 @@ public class CustomerServiceImpl implements CustomerService{
     public Customer createCustomer(Customer customer) {
         if (customer.getPassword() == null || customer.getPassword().isEmpty()) {
     throw new IllegalArgumentException("Password cannot be null or empty");
+    
+    } if (customerDao.existsByEmail(customer.getEmail())) {
+        throw new CustomerAlreadyExistsException("Email already exists");
     }
         String encryptedPassword = PasswordUtil.encodePassword(customer.getPassword());
         customer.setPassword(encryptedPassword);
@@ -98,6 +102,12 @@ public void changePassword(String customerId, String currentPassword, String new
     customer.setUpdatedAt(LocalDateTime.now());
     customerDao.update(customer);
     }
+
+
+	@Override
+	public Optional<Customer> findByEmail(String email) {
+		return customerDao.findByEmail(email);
+	}
 }  
    
    

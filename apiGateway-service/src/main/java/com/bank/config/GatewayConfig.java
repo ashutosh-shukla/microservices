@@ -1,5 +1,6 @@
 package com.bank.config;
 
+
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
@@ -11,36 +12,60 @@ public class GatewayConfig {
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
         return builder.routes()
-                // KYC Service Routes
-                .route("kyc-service", r -> r
-                        .path("/kyc/api/**")
-                        .uri("lb://kyc-service"))
+                // Auth Service Routes (Public - No JWT Filter)
+                .route("auth-service", r -> r
+                        .path("/auth/**")
+                        .uri("lb://auth-service"))
                 
-                // Customer Service Routes
-                .route("customer-service", r -> r
-                        .path("/customers/**")
+                // Customer Registration Route (Public - No JWT Filter)
+                .route("customer-registration", r -> r
+                        .path("/customers/register")
                         .uri("lb://customer-service"))
                 
-                // Account Service Routes
+                // Customer Validation Route (Public - Used by Auth Service)
+                .route("customer-validation", r -> r
+                        .path("/customers/validate-credentials")
+                        .uri("lb://customer-service"))
+                
+                // Customer Service Routes (Protected - Requires JWT)
+                .route("customer-service-protected", r -> r
+                        .path("/customers/**")
+                        
+                        .uri("lb://customer-service"))
+                
+                // KYC Service Routes (Protected - Requires JWT)
+                .route("kyc-service", r -> r
+                        .path("/kyc/api/**")
+                        
+                        .uri("lb://kyc-service"))
+                
+                // Account Service Routes (Protected - Requires JWT)
                 .route("account-service", r -> r
                         .path("/account-api/**")
+                        
                         .uri("lb://account-service"))
                 
-                // Admin Service Routes
+                // Admin Service Routes (Protected - Requires JWT with ADMIN role)
                 .route("admin-service", r -> r
                         .path("/admin/**")
+                        
                         .uri("lb://admin-service"))
                 
-                // Health check routes
-                .route("kyc-health", r -> r
-                        .path("/health/kyc")
-                        .filters(f -> f.rewritePath("/health/kyc", "/kyc/api/health"))
-                        .uri("lb://kyc-service"))
+                // Health check routes (Public)
+                .route("auth-health", r -> r
+                        .path("/health/auth")
+                        .filters(f -> f.rewritePath("/health/auth", "/auth/health"))
+                        .uri("lb://auth-service"))
                 
                 .route("customer-health", r -> r
                         .path("/health/customer")
                         .filters(f -> f.rewritePath("/health/customer", "/customers/hello"))
                         .uri("lb://customer-service"))
+                
+                .route("kyc-health", r -> r
+                        .path("/health/kyc")
+                        .filters(f -> f.rewritePath("/health/kyc", "/kyc/api/health"))
+                        .uri("lb://kyc-service"))
                 
                 .route("account-health", r -> r
                         .path("/health/account")

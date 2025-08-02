@@ -15,6 +15,8 @@ public interface CustomerDao {
       Customer update(Customer customer);
       Customer findById(String customerId);
       void updatePassword(String customerId, String newPassword);
-      
+      Optional<Customer> findByEmail(String email);
+      //exception handling is done in service layer
+      boolean existsByEmail(String email);
 
 }

@@ -19,6 +19,8 @@ public class CustomerUIController {
     private RestTemplate restTemplate;
     
     private static final String API_GATEWAY_URL = "http://localhost:8080";
+
+    
     
     // Show registration form
     @GetMapping("/register")

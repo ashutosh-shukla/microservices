@@ -1,10 +1,12 @@
 package com.bank.controller;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,12 +18,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.bank.dto.CredentialValidationRequest;
+import com.bank.dto.CredentialValidationResponse;
 import com.bank.model.Account;
 import com.bank.model.Customer;
 import com.bank.model.Transaction;
 import com.bank.proxy.AccountServiceProxy;
 import com.bank.services.CustomerService;
-
+import com.bank.config.*;
 @RestController
 @RequestMapping("/customers")
 public class CustomerController {
@@ -32,11 +36,17 @@ public class CustomerController {
     @Autowired
     private AccountServiceProxy accountServiceProxy;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    
     @GetMapping("/hello")
     public String hello() {
         return "Hello from Customer Service!";
     }
 
+ // Add this method to your existing CustomerController class
+
+   
     @PostMapping("/register")
     public ResponseEntity<Customer> registerCustomer(@RequestBody Customer customer) {
         try {
@@ -63,10 +73,10 @@ public class CustomerController {
         customerService.changePassword(customerId, currentPassword, newPassword);
     }
 
-    @PutMapping("/{customerId}/change-email")
-    public void changeEmail(@PathVariable String customerId, @RequestParam String newEmail) {
-        customerService.changeEmail(customerId, newEmail);
-    }
+	    @PutMapping("/{customerId}/change-email")
+	    public void changeEmail(@PathVariable String customerId, @RequestParam String newEmail) {
+	        customerService.changeEmail(customerId, newEmail);
+	    }
 
     // --- Account API calls ---
 
