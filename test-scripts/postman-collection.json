@@ -1,0 +1,865 @@
+{
+  "info": {
+    "name": "SecureBank API Testing Collection",
+    "description": "Complete API testing collection for SecureBank banking application with JWT authentication",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "auth_service",
+      "value": "http://localhost:8085",
+      "type": "string"
+    },
+    {
+      "key": "customer_service",
+      "value": "http://localhost:8081",
+      "type": "string"
+    },
+    {
+      "key": "account_service",
+      "value": "http://localhost:8082",
+      "type": "string"
+    },
+    {
+      "key": "kyc_service",
+      "value": "http://localhost:8083",
+      "type": "string"
+    },
+    {
+      "key": "admin_service",
+      "value": "http://localhost:8084",
+      "type": "string"
+    },
+    {
+      "key": "gateway",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "admin_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "customer_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "admin_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Health Checks",
+      "item": [
+        {
+          "name": "Auth Service Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{auth_service}}/auth/health",
+              "host": ["{{auth_service}}"],
+              "path": ["auth", "health"]
+            }
+          }
+        },
+        {
+          "name": "Customer Service Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{customer_service}}/customers/hello",
+              "host": ["{{customer_service}}"],
+              "path": ["customers", "hello"]
+            }
+          }
+        },
+        {
+          "name": "Gateway Health - Auth",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/health/auth",
+              "host": ["{{gateway}}"],
+              "path": ["health", "auth"]
+            }
+          }
+        },
+        {
+          "name": "Gateway Health - Customer",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/health/customer",
+              "host": ["{{gateway}}"],
+              "path": ["health", "customer"]
+            }
+          }
+        },
+        {
+          "name": "Gateway Health - Account",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/health/account",
+              "host": ["{{gateway}}"],
+              "path": ["health", "account"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Authentication",
+      "item": [
+        {
+          "name": "Admin Registration",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Admin registration successful\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"firstName\": \"Test\",\n    \"lastName\": \"Admin\",\n    \"email\": \"testadmin@bank.com\",\n    \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "{{auth_service}}/auth/admin/register",
+              "host": ["{{auth_service}}"],
+              "path": ["auth", "admin", "register"]
+            }
+          }
+        },
+        {
+          "name": "Customer Registration",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Customer registration successful\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"firstName\": \"Test\",\n    \"lastName\": \"Customer\",\n    \"email\": \"testcustomer@bank.com\",\n    \"phoneNumber\": \"1234567890\",\n    \"address\": \"123 Test St, Test City\",\n    \"dateOfBirth\": \"1990-01-01\",\n    \"password\": \"customer123\",\n    \"role\": \"CUSTOMER\"\n}"
+            },
+            "url": {
+              "raw": "{{customer_service}}/customers/register",
+              "host": ["{{customer_service}}"],
+              "path": ["customers", "register"]
+            }
+          }
+        },
+        {
+          "name": "Admin Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Admin login successful\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.success).to.be.true;",
+                  "    pm.expect(responseJson.token).to.not.be.empty;",
+                  "    ",
+                  "    // Save tokens for future requests",
+                  "    pm.environment.set(\"admin_token\", responseJson.token);",
+                  "    pm.environment.set(\"admin_id\", responseJson.userId);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"testadmin@bank.com\",\n    \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "{{auth_service}}/auth/login",
+              "host": ["{{auth_service}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Customer Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Customer login successful\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.success).to.be.true;",
+                  "    pm.expect(responseJson.token).to.not.be.empty;",
+                  "    ",
+                  "    // Save tokens for future requests",
+                  "    pm.environment.set(\"jwt_token\", responseJson.token);",
+                  "    pm.environment.set(\"customer_id\", responseJson.userId);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"testcustomer@bank.com\",\n    \"password\": \"customer123\"\n}"
+            },
+            "url": {
+              "raw": "{{auth_service}}/auth/login",
+              "host": ["{{auth_service}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Validate Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Token validation successful\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.valid).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"token\": \"{{jwt_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{auth_service}}/auth/validate-token",
+              "host": ["{{auth_service}}"],
+              "path": ["auth", "validate-token"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Customer Service - Direct",
+      "item": [
+        {
+          "name": "Get Customer",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{customer_service}}/customers/{{customer_id}}",
+              "host": ["{{customer_service}}"],
+              "path": ["customers", "{{customer_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Customer",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"firstName\": \"Updated\",\n    \"lastName\": \"Customer\",\n    \"address\": \"456 Updated St\",\n    \"phoneNumber\": \"0987654321\",\n    \"status\": \"ACTIVE\"\n}"
+            },
+            "url": {
+              "raw": "{{customer_service}}/customers/{{customer_id}}",
+              "host": ["{{customer_service}}"],
+              "path": ["customers", "{{customer_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Validate Credentials",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"testcustomer@bank.com\",\n    \"password\": \"customer123\"\n}"
+            },
+            "url": {
+              "raw": "{{customer_service}}/customers/validate-credentials",
+              "host": ["{{customer_service}}"],
+              "path": ["customers", "validate-credentials"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Customer Service - Gateway (Protected)",
+      "item": [
+        {
+          "name": "Get Customer (Gateway)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Protected route accessible\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/customers/{{customer_id}}",
+              "host": ["{{gateway}}"],
+              "path": ["customers", "{{customer_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Customer (Gateway)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"firstName\": \"Gateway\",\n    \"lastName\": \"Updated\",\n    \"address\": \"789 Gateway St\",\n    \"phoneNumber\": \"5555555555\",\n    \"status\": \"ACTIVE\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway}}/customers/{{customer_id}}",
+              "host": ["{{gateway}}"],
+              "path": ["customers", "{{customer_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Change Password (Gateway)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "currentPassword",
+                  "value": "customer123",
+                  "type": "text"
+                },
+                {
+                  "key": "newPassword",
+                  "value": "newpassword123",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{gateway}}/customers/{{customer_id}}/change-password",
+              "host": ["{{gateway}}"],
+              "path": ["customers", "{{customer_id}}", "change-password"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Account Service - Gateway (Protected)",
+      "item": [
+        {
+          "name": "Get Account",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/account-api/accounts/customer/{{customer_id}}",
+              "host": ["{{gateway}}"],
+              "path": ["account-api", "accounts", "customer", "{{customer_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Deposit Money",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "amount",
+                  "value": "1000.00",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{gateway}}/account-api/accounts/{{customer_id}}/deposit",
+              "host": ["{{gateway}}"],
+              "path": ["account-api", "accounts", "{{customer_id}}", "deposit"]
+            }
+          }
+        },
+        {
+          "name": "Withdraw Money",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "amount",
+                  "value": "500.00",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{gateway}}/account-api/accounts/{{customer_id}}/withdraw",
+              "host": ["{{gateway}}"],
+              "path": ["account-api", "accounts", "{{customer_id}}", "withdraw"]
+            }
+          }
+        },
+        {
+          "name": "Transfer Money",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "toAccountNumber",
+                  "value": "1234567890",
+                  "type": "text"
+                },
+                {
+                  "key": "amount",
+                  "value": "200.00",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{gateway}}/account-api/accounts/{{customer_id}}/transfer",
+              "host": ["{{gateway}}"],
+              "path": ["account-api", "accounts", "{{customer_id}}", "transfer"]
+            }
+          }
+        },
+        {
+          "name": "Get Transaction History",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/account-api/accounts/{{customer_id}}/transactions",
+              "host": ["{{gateway}}"],
+              "path": ["account-api", "accounts", "{{customer_id}}", "transactions"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Admin Service - Gateway (Admin Only)",
+      "item": [
+        {
+          "name": "Admin Dashboard",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/admin/dashboard",
+              "host": ["{{gateway}}"],
+              "path": ["admin", "dashboard"]
+            }
+          }
+        },
+        {
+          "name": "View Customer (Admin)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/admin/view?customerId={{customer_id}}",
+              "host": ["{{gateway}}"],
+              "path": ["admin", "view"],
+              "query": [
+                {
+                  "key": "customerId",
+                  "value": "{{customer_id}}"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. KYC Service - Gateway (Protected)",
+      "item": [
+        {
+          "name": "Get KYC Documents",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/kyc/api/documents/{{customer_id}}",
+              "host": ["{{gateway}}"],
+              "path": ["kyc", "api", "documents", "{{customer_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Error Testing",
+      "item": [
+        {
+          "name": "Invalid Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Invalid token rejected\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer invalid_token"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway}}/customers/test",
+              "host": ["{{gateway}}"],
+              "path": ["customers", "test"]
+            }
+          }
+        },
+        {
+          "name": "Missing Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Missing token rejected\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/customers/test",
+              "host": ["{{gateway}}"],
+              "path": ["customers", "test"]
+            }
+          }
+        },
+        {
+          "name": "Customer accessing Admin (Forbidden)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Customer denied admin access\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/admin/dashboard",
+              "host": ["{{gateway}}"],
+              "path": ["admin", "dashboard"]
+            }
+          }
+        },
+        {
+          "name": "Invalid Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Invalid login rejected\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"wrong@email.com\",\n    \"password\": \"wrongpassword\"\n}"
+            },
+            "url": {
+              "raw": "{{auth_service}}/auth/login",
+              "host": ["{{auth_service}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
